@@ -1,0 +1,112 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{listings} 
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\baselineskip}
+
+\title{Get amount of blocks an item model is moved and translated by}
+\date{February 2022}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+When an item model is placed on the head of an armor stand, player, zombie, etc. it can be scaled by $1.6$ and it will be as big as one block.
+
+When creating big models that require multiple parts, it can be useful to know how many blocks in the world to move the armor stand by when the model was moved (cubes being moved), translated (translation was changed in the display settings). This gets more complicated when a scale is applied to the display setting.
+
+\section{Result}
+$$b=\frac{m\cdot s+t}{25.6}$$
+$b$ is the amount of blocks in the world the move and translation equates to.
+
+$m$ is the amount that all cubes in the model have been moved by.
+
+$s$ is the scale of the head display setting, where $1.6$ means the item will be as big as a block, and $4$ is the maximum.
+
+$t$ is the translation on the display setting.
+
+\section{Why?}
+To explain why this works, let's look at the unsimplified equation and explain all parts.
+
+$$b=\frac{m\cdot \frac{s}{1.6}}{16}+\frac{t}{16}\cdot \frac{1}{1.6}$$
+
+The left part, $\frac{m\cdot \frac{s}{1.6}}{16}$ is for calculating the amount of blocks for moving cubes. $m\cdot \frac{s}{1.6}$ converts the movement into as if it had a scale of $1.6$. This is because at a scale of $1.6$, $16$ pixels equals one full block, therefore dividing that part by $16$ gives the amount of blocks.
+
+The right part, $\frac{t}{16}\cdot \frac{1}{1.6}$ is for calculating the amount of blocks for the display setting translation. The translation, unlike the movement, ignores the scale of the model. Having a translation of $16$ gives $0.625$ blocks of movement in the world. This was found by testing. $0.625=\frac{1}{1.6}$ which is what the game internally scales the model down by, which is why scaling it up by $1.6$ works. $0.625\cdot 1.6=1$. So for every $16$ we translate, the model moves by $\frac{1}{1.6}$ blocks. As mathematics: $\frac{t}{16}\cdot \frac{1}{1.6}$.
+
+Simplification:
+
+$b=\frac{m\cdot \frac{s}{1.6}}{16}+\frac{t}{16}\cdot \frac{1}{1.6}$
+
+$b=\frac{\frac{m\cdot s}{1.6}}{16}+\frac{t\cdot 1}{16\cdot 1.6}$
+
+$b=\frac{m\cdot s}{1.6\cdot 16}+\frac{t}{25.6}$
+
+$b=\frac{m\cdot s}{25.6}+\frac{t}{25.6}$
+
+$b=\frac{m\cdot s+t}{25.6}$
+\newpage
+\section{Example}
+\begin{figure}[h]
+    \centering
+    \begin{lstlisting}
+{
+  "textures": {
+    "all": "block/netherite_block"
+  },
+  "elements": [
+    {
+      "from": [ 0, 0, 0 ],
+      "to": [ 16, 16, 16 ],
+      "faces": /.../
+    ],
+	"display": {
+	  "head": {
+	    "rotation": [0, 0, 0],
+	    "scale": [4, 4, 4],
+	    "translation": [0, 0, 0]
+	  }
+	}
+}
+    \end{lstlisting}
+    \caption{Example normal model}
+    \label{fig:example-normal}
+\end{figure}
+
+\emph{See next page}
+
+\begin{figure}[h]
+    \centering
+    \begin{lstlisting}
+{
+  "textures": {
+    "all": "block/netherite_block"
+  },
+  "elements": [
+    {
+      "from": [ 12, 0, 0 ],
+      "to": [ 28, 16, 16 ],
+      "faces": /.../
+    ],
+	"display": {
+	  "head": {
+	    "rotation": [0, 0, 0],
+	    "scale": [4, 4, 4],
+	    "translation": [27, 0, 0]
+	  }
+	}
+}
+    \end{lstlisting}
+    \caption{Example moved model}
+    \label{fig:example-moved}
+\end{figure}
+\newpage
+The difference is that the cube has been moved by $12$ in the x-axis (from[0] is now 12 and to[0] is now $28$ $16+12=28$), and that the model was translated by $27$, the display translation is now $27$. The scale remains the same for both models.
+
+In this example, $m=12$, $s=4$ and $t=27$. This gives $b=\frac{m\cdot s+t}{25.6}=\frac{12\cdot 4+27}{25.6}=2.9296875$.
+
+If an armor stand is given the model from Figure \ref{fig:example-normal}, and another armor stand is spawned with the model from Figure \ref{fig:example-moved}, and this other armor stand is teleported $2.9296875$ in x relative to the first armor stand ($\sim2.9296875\sim\ \sim$), the two models will render at exactly the same place.
+
+\end{document}
